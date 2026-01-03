@@ -6,7 +6,8 @@ import { useState, useEffect } from "react";
 import Navbar from "@/widgets/Navbar";
 import { useAuthStore } from "@/store/auth-store";
 import { useDeviceStore } from "@/store/device-store";
-
+import Footer from "@/widgets/Footer";
+import { Toaster } from "sonner";
 export function Providers({ children }: { children: React.ReactNode }) {
   const restore = useAuthStore((s) => s.restore);
   const initDevice = useDeviceStore((s) => s.init);
@@ -37,6 +38,8 @@ export function Providers({ children }: { children: React.ReactNode }) {
       <Navbar />
       {children}
       <ReactQueryDevtools initialIsOpen={false} />
+      <Footer />
+      <Toaster />
     </QueryClientProvider>
   );
 }

@@ -5,6 +5,7 @@ import { FcGoogle } from "react-icons/fc";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Separator } from "@/components/ui/separator";
 
 import { useLogin } from "@/hooks/auth/useLogin";
 
@@ -23,21 +24,18 @@ interface LoginFormProps {
 }
 
 const LoginForm = ({
-  heading,
+  heading = "ServiceCity Dashboard Login",
   logo = {
-    url: "https://www.shadcnblocks.com",
-    src: "https://www.shadcnblocks.com/images/block/logos/shadcnblockscom-wordmark.svg",
+    url: "/",
+    src: "",
     alt: "logo",
-    title: "ServeCity",
+    title: "ServiceCity",
   },
-  buttonText = "Login",
-  googleText = "Sign up with Google",
-  signupText = "Don't have an account?",
+  buttonText = "Login to Dashboard",
+  googleText = "Continue with Google",
+  signupText = "New here?",
   signupUrl = "/signup",
 }: LoginFormProps) => {
-  // -------------------------
-  // 🧠 OLD LOGIN LOGIC HERE
-  // -------------------------
   const loginMutation = useLogin();
 
   const [email, setEmail] = useState("");
@@ -45,77 +43,87 @@ const LoginForm = ({
 
   const handleLogin = async (e: any) => {
     e.preventDefault();
-
     try {
       await loginMutation.mutateAsync({ email, password });
-      alert("Login successful!");
-      window.location.href = "/"; // optional redirect
+      window.location.href = "/";
     } catch (err: any) {
       alert(err?.message || "Login failed");
     }
   };
 
   return (
-    <section className=" h-screen">
-      <div className="flex h-full items-center justify-center">
-        <div className="border-muted border-3 bg-background flex w-full max-w-sm flex-col items-center gap-y-8 rounded-md border px-6 py-12 shadow-md">
-          <div className="flex flex-col items-center gap-y-2">
-            {/* Logo */}
-            <div className="flex items-center gap-1 lg:justify-start">
-              <a href={logo.url}>
-                <span className="font-bold text-2xl">{logo.title}</span>
-              </a>
-            </div>
-            {heading && <h1 className="text-3xl font-semibold">{heading}</h1>}
+    <section className="min-h-screen bg-muted/40 flex items-center justify-center px-4">
+      <div className="w-full max-w-md">
+        <div className="rounded-2xl border bg-background shadow-lg px-8 py-10 space-y-8">
+          {/* Logo */}
+          <div className="flex justify-center">
+            <a
+              href={logo.url}
+              className="text-2xl font-semibold tracking-tight"
+            >
+              {logo.title}
+            </a>
           </div>
 
-          {/* 🔥 Form logic injected but UI unchanged */}
-          <form className="flex w-full flex-col gap-8" onSubmit={handleLogin}>
-            <div className="flex flex-col gap-4">
-              <div className="flex flex-col gap-2">
-                <Input
-                  type="email"
-                  placeholder="Email"
-                  required
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                />
-              </div>
+          {/* Heading */}
+          <div className="text-center space-y-2">
+            <h1 className="text-2xl font-semibold tracking-tight">{heading}</h1>
+            <p className="text-sm text-muted-foreground">
+              Enter your credentials to access your dashboard
+            </p>
+          </div>
 
-              <div className="flex flex-col gap-2">
-                <Input
-                  type="password"
-                  placeholder="Password"
-                  required
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                />
-              </div>
+          {/* Form */}
+          <form onSubmit={handleLogin} className="space-y-5">
+            <div className="space-y-3">
+              <Input
+                type="email"
+                placeholder="Email address"
+                required
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+              />
 
-              <div className="flex flex-col gap-4">
-                <Button
-                  type="submit"
-                  className="mt-2 w-full"
-                  disabled={loginMutation.isPending}
-                >
-                  {loginMutation.isPending ? "Logging in..." : buttonText}
-                </Button>
-
-                <Button variant="outline" className="w-full" type="button">
-                  <FcGoogle className="mr-2 size-5" />
-                  {googleText}
-                </Button>
-              </div>
+              <Input
+                type="password"
+                placeholder="Password"
+                required
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+              />
             </div>
+
+            <Button
+              type="submit"
+              className="w-full h-11"
+              disabled={loginMutation.isPending}
+            >
+              {loginMutation.isPending ? "Logging in..." : buttonText}
+            </Button>
           </form>
 
-          <div className="text-muted-foreground flex justify-center gap-1 text-sm">
-            <p>{signupText}</p>
+          {/* Divider */}
+          <div className="relative">
+            <Separator />
+            <span className="absolute left-1/2 -translate-x-1/2 -top-2 bg-background px-2 text-xs text-muted-foreground">
+              OR
+            </span>
+          </div>
+
+          {/* Google */}
+          <Button variant="outline" className="w-full h-11" type="button">
+            <FcGoogle className="mr-2 size-5" />
+            {googleText}
+          </Button>
+
+          {/* Footer */}
+          <div className="text-center text-sm text-muted-foreground">
+            {signupText}{" "}
             <a
               href={signupUrl}
-              className="text-primary font-medium hover:underline"
+              className="font-medium text-primary hover:underline"
             >
-              Sign up
+              Create an account
             </a>
           </div>
         </div>

@@ -14,6 +14,7 @@ import {
   SelectContent,
   SelectItem,
 } from "@/components/ui/select";
+import { Loader2 } from "lucide-react"; // loader icon
 import { api } from "@/lib/api";
 import { useGetCategoriesSelect } from "@/hooks/verification/useGetCategoriesSelect";
 import { useGetSubCategoriesSelect } from "@/hooks/verification/useGetSubCategoriesSelect";
@@ -37,15 +38,16 @@ export default function VerificationPage() {
   const { data: categories, isLoading: categoriesLoading } =
     useGetCategoriesSelect();
 
-  const {
-    data: subCategories,
-    isLoading: subCategoriesLoading,
-  } = useGetSubCategoriesSelect(categoryId); // dependent fetch
+  const { data: subCategories, isLoading: subCategoriesLoading } =
+    useGetSubCategoriesSelect(categoryId);
 
   // Aadhaar & Avatar
   const [aadhaarFile, setAadhaarFile] = useState<File | null>(null);
   const [avatar, setAvatar] = useState<File | null>(null);
   const [avatarPreview, setAvatarPreview] = useState("");
+
+  // Submit loading state
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Avatar preview
   const handleAvatar = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -65,6 +67,7 @@ export default function VerificationPage() {
   // Submit form
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setIsSubmitting(true);
 
     const fd = new FormData();
     fd.append("fullName", fullName);
@@ -83,10 +86,12 @@ export default function VerificationPage() {
       const res = await api.post("/workers/verification/submit", fd);
       if (!res.data) throw new Error("Verification failed");
 
-      router.push("/profile");
+      router.push("/");
     } catch (err) {
       console.error(err);
       alert("Something went wrong.");
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -99,7 +104,6 @@ export default function VerificationPage() {
 
         <CardContent>
           <form className="space-y-6 mt-4" onSubmit={handleSubmit}>
-            
             {/* AVATAR ON TOP */}
             <div className="flex flex-col items-center gap-3">
               <Avatar className="w-24 h-24">
@@ -147,7 +151,7 @@ export default function VerificationPage() {
                 value={categoryId}
                 onValueChange={(value) => {
                   setCategoryId(value);
-                  setSubCategoryId(""); // reset subcategory
+                  setSubCategoryId("");
                 }}
                 disabled={categoriesLoading}
               >
@@ -215,7 +219,6 @@ export default function VerificationPage() {
                   value={city}
                   onChange={(e) => setCity(e.target.value)}
                 />
-
                 <Input
                   placeholder="State"
                   value={state}
@@ -254,9 +257,17 @@ export default function VerificationPage() {
             {/* Submit */}
             <Button
               type="submit"
-              className="w-full bg-black text-white hover:bg-gray-800"
+              disabled={isSubmitting}
+              className="w-full bg-black text-white hover:bg-gray-800 disabled:opacity-60"
             >
-              Submit for Verification
+              {isSubmitting ? (
+                <div className="flex items-center gap-2">
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Submitting...
+                </div>
+              ) : (
+                "Submit for Verification"
+              )}
             </Button>
           </form>
         </CardContent>

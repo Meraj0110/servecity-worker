@@ -1,13 +1,32 @@
 "use client";
+
 import React from "react";
-import { Grid2x2PlusIcon, MenuIcon, ShoppingCart } from "lucide-react";
+import Link from "next/link";
+import Cookies from "js-cookie";
+import { Grid2x2PlusIcon, MenuIcon } from "lucide-react";
+
 import { Sheet, SheetContent, SheetFooter } from "@/components/ui/sheet";
+
 import { Button, buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import Link from "next/link";
 import ProfileButton from "@/widgets/ProfileButton";
-import { useAuthStore } from "@/store/auth-store"; // ✅ Add this
+import { useAuthStore } from "@/store/auth-store";
 
+/* ----------------------------------
+   TYPES
+----------------------------------- */
+type VerificationRule = "any" | "verified" | "unverified";
+
+interface NavLink {
+  label: string;
+  href: string;
+  authRequired: boolean;
+  verification: VerificationRule;
+}
+
+/* ----------------------------------
+   COMPONENT
+----------------------------------- */
 export function FloatingHeader({
   isAuthenticated,
   profile,
@@ -16,192 +35,195 @@ export function FloatingHeader({
   profile: any;
 }) {
   const [open, setOpen] = React.useState(false);
+  const logout = useAuthStore((s) => s.logout);
 
-  const logout = useAuthStore((s) => s.logout); // ✅ Use same logout function
+  /* ----------------------------------
+     VERIFIED STATE FROM COOKIE
+     Cookie value expected: "true" | "false"
+  ----------------------------------- */
+  const isVerified = Cookies.get("verified") === "true";
 
-  const canShowLink = (link: any) => {
-    // If user is NOT logged in → hide all auth links
-    if (!isAuthenticated && link.isAuth) return false;
+  /* ----------------------------------
+     NAV LINKS
+  ----------------------------------- */
+  const links: NavLink[] = [
+    {
+      label: "Verify Yourself",
+      href: "/verification-form",
+      authRequired: true,
+      verification: "unverified",
+    },
+    {
+      label: "Your Works",
+      href: "/dashboard/orders/all-orders",
+      authRequired: true,
+      verification: "verified",
+    },
+    {
+      label: "Dashboard",
+      href: "/dashboard",
+      authRequired: true,
+      verification: "verified",
+    },
+  ];
 
-    // If user is logged in but NOT verified → hide verified-only links
-    if (isAuthenticated && !profile?.isVerified && link.isVerified)
-      return false;
+  /* ----------------------------------
+     ACCESS CONTROL LOGIC
+  ----------------------------------- */
+  const canShowLink = (link: NavLink) => {
+    // Requires login
+    if (link.authRequired && !isAuthenticated) return false;
 
-    // If user is logged in and IS verified → hide "verify yourself"
-    if (
-      isAuthenticated &&
-      profile?.isVerified &&
-      link.label === "Verify Yourself"
-    )
-      return false;
+    // Only verified users
+    if (link.verification === "verified" && !isVerified) return false;
+
+    // Only unverified users
+    if (link.verification === "unverified" && isVerified) return false;
 
     return true;
   };
 
-  const links = [
-    {
-      label: "Verify Yourself",
-      isAuth: true,
-      isVerified: false,
-      href: "/verification-form",
-    },
-    {
-      label: "Your Works",
-      isVerified: true,
-      isAuth: true,
-      href: "/orders",
-    },
-    {
-      label: "Dashboard",
-      isAuth: true,
-      isVerified: true,
-      href: "/dashboard",
-    },
-  ];
-
   return (
-    <div className="">
-      <header
-        className={cn(
-          "sticky top-5 z-50",
-          "mx-auto w-full max-w-3xl rounded-lg border shadow",
-          "bg-background/95 supports-[backdrop-filter]:bg-background/80 backdrop-blur-lg"
-        )}
-      >
-        <nav className="mx-auto flex items-center justify-between p-1.5">
-          {/* LEFT LOGO */}
-          <Link href="/">
-            <div className="hover:bg-accent flex cursor-pointer items-center gap-2 rounded-md px-2 py-1 duration-100">
-              <Grid2x2PlusIcon className="size-5" />
-              <p className="font-mono text-base font-bold">ServeCity</p>
-            </div>
-          </Link>
+    <header
+      className={cn(
+        "sticky top-5 z-50",
+        "mx-auto w-full max-w-3xl rounded-lg border shadow",
+        "bg-background/95 supports-[backdrop-filter]:bg-background/80 backdrop-blur-lg"
+      )}
+    >
+      <nav className="flex items-center justify-between p-1.5">
+        {/* LEFT LOGO */}
+        <Link href="/">
+          <div className="flex items-center gap-2 rounded-md px-2 py-1 hover:bg-accent">
+            <Grid2x2PlusIcon className="size-5" />
+            <p className="font-mono text-base font-bold">Dashboard</p>
+          </div>
+        </Link>
 
-          {/* DESKTOP LINKS */}
-          <div className="hidden items-center gap-1 lg:flex">
-            {links.map((link) =>
-              link.isAuth ? (
-                isAuthenticated && (
-                  <Link href={link.href} key={link.href}>
-                    <span
-                      className={buttonVariants({
-                        variant: "ghost",
-                        size: "sm",
-                      })}
-                    >
-                      {link.label}
-                    </span>
-                  </Link>
-                )
-              ) : (
+        {/* DESKTOP NAV */}
+        <div className="hidden items-center gap-1 lg:flex">
+          {links.map(
+            (link) =>
+              canShowLink(link) && (
                 <Link href={link.href} key={link.href}>
                   <span
-                    className={buttonVariants({ variant: "ghost", size: "sm" })}
+                    className={buttonVariants({
+                      variant: "ghost",
+                      size: "sm",
+                    })}
                   >
                     {link.label}
                   </span>
                 </Link>
               )
-            )}
+          )}
 
-            {isAuthenticated && (
-              <button
-                onClick={logout} // ✅ FIXED
-                className={buttonVariants({ variant: "ghost", size: "sm" })}
-              >
-                Logout
-              </button>
-            )}
-          </div>
+          {isAuthenticated && (
+            <button
+              onClick={logout}
+              className={buttonVariants({ variant: "ghost", size: "sm" })}
+            >
+              Logout
+            </button>
+          )}
+        </div>
 
-          {/* RIGHT SIDE */}
-          <div className="flex items-center gap-2">
-            {!isAuthenticated ? (
-              <Link href="/login">
-                <Button size="sm">Login</Button>
-              </Link>
-            ) : (
-              <ProfileButton profileImage={profile?.avatar} />
-            )}
+        {/* RIGHT SIDE */}
+        <div className="flex items-center gap-2">
+          {!isAuthenticated ? (
+            <Link href="/login">
+              <Button size="sm">Login</Button>
+            </Link>
+          ) : (
+            <ProfileButton profileImage={profile?.avatar} />
+          )}
 
-            {/* MOBILE MENU */}
-            <Sheet open={open} onOpenChange={setOpen}>
-              <Button
-                size="icon"
-                variant="outline"
-                onClick={() => setOpen(!open)}
-                className="lg:hidden"
-              >
-                <MenuIcon className="size-4" />
-              </Button>
+          {/* MOBILE MENU */}
+          <Sheet open={open} onOpenChange={setOpen}>
+            <Button
+              size="icon"
+              variant="outline"
+              className="lg:hidden"
+              onClick={() => setOpen(true)}
+            >
+              <MenuIcon className="size-4" />
+            </Button>
 
-              <SheetContent
-                className="bg-background/95 supports-[backdrop-filter]:bg-background/80 gap-0 backdrop-blur-lg"
-                showClose={false}
-                side="left"
-              >
-                <div className="grid gap-y-2 overflow-y-auto px-4 pt-12 pb-5">
-                  {links.map(
-                    (link) =>
-                      canShowLink(link) && (
-                        <Link href={link.href} key={link.href}>
-                          <span
-                            className={buttonVariants({
-                              variant: "ghost",
-                              size: "sm",
-                            })}
-                          >
-                            {link.label}
-                          </span>
-                        </Link>
-                      )
-                  )}
-
-                  {!isAuthenticated && (
-                    <Link href="/login">
-                      <span
-                        className={buttonVariants({
-                          variant: "ghost",
-                          className: "justify-start",
-                        })}
+            <SheetContent
+              side="left"
+              showClose={false}
+              className="bg-background/95 supports-[backdrop-filter]:bg-background/80 backdrop-blur-lg"
+            >
+              <div className="grid gap-y-2 px-4 pt-12 pb-5">
+                {links.map(
+                  (link) =>
+                    canShowLink(link) && (
+                      <Link
+                        href={link.href}
+                        key={link.href}
+                        onClick={() => setOpen(false)}
                       >
-                        Login
-                      </span>
-                    </Link>
-                  )}
-
-                  {isAuthenticated && (
-                    <>
-                      <Link href="/profile">
                         <span
                           className={buttonVariants({
                             variant: "ghost",
                             className: "justify-start",
                           })}
                         >
-                          Profile
+                          {link.label}
                         </span>
                       </Link>
+                    )
+                )}
 
-                      <button
-                        onClick={logout} // ✅ FIXED
+                {!isAuthenticated && (
+                  <Link href="/login" onClick={() => setOpen(false)}>
+                    <span
+                      className={buttonVariants({
+                        variant: "ghost",
+                        className: "justify-start",
+                      })}
+                    >
+                      Login
+                    </span>
+                  </Link>
+                )}
+
+                {isAuthenticated && (
+                  <>
+                    <Link href="/profile" onClick={() => setOpen(false)}>
+                      <span
                         className={buttonVariants({
                           variant: "ghost",
                           className: "justify-start",
                         })}
                       >
-                        Logout
-                      </button>
-                    </>
-                  )}
-                </div>
+                        Profile
+                      </span>
+                    </Link>
 
-                <SheetFooter>Serve City</SheetFooter>
-              </SheetContent>
-            </Sheet>
-          </div>
-        </nav>
-      </header>
-    </div>
+                    <button
+                      onClick={() => {
+                        logout();
+                        setOpen(false);
+                      }}
+                      className={buttonVariants({
+                        variant: "ghost",
+                        className: "justify-start",
+                      })}
+                    >
+                      Logout
+                    </button>
+                  </>
+                )}
+              </div>
+
+              <SheetFooter className="text-xs text-muted-foreground">
+                Serve City
+              </SheetFooter>
+            </SheetContent>
+          </Sheet>
+        </div>
+      </nav>
+    </header>
   );
 }
